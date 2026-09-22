@@ -1,6 +1,7 @@
 import hashlib
 import json
 import math
+import os
 import re
 import time
 from email import policy
@@ -26,7 +27,6 @@ app.add_middleware(
 # -------------------------------------------------------------
 
 def detect_zero_width_and_invisible_steganography(text: str) -> Dict:
-    """Detects invisible unicode markers used in LLM prompt injection and email fingerprinting."""
     zero_width_chars = {
         '\u200B': 'ZERO_WIDTH_SPACE',
         '\u200C': 'ZERO_WIDTH_NON_JOINER',
@@ -40,7 +40,6 @@ def detect_zero_width_and_invisible_steganography(text: str) -> Dict:
         if cnt > 0:
             found[name] = cnt
 
-    # Check for adversarial prompt injection hints attempting to deceive LLM security layers
     injection_patterns = [
         r'ignore previous instructions',
         r'system prompt override',
@@ -56,15 +55,12 @@ def detect_zero_width_and_invisible_steganography(text: str) -> Dict:
     }
 
 def detect_devsecops_contagious_interview(text: str) -> Dict:
-    """Detects modern fake technical test exploits (e.g. malicious npm, python scripts, docker traps)."""
     code_exploit_lexicon = [
         r'npm install', r'yarn start', r'pip install', r'git clone',
         r'docker run', r'run test script', r'execute build', r'debug project',
         r'unzip project', r'\.dmg', r'\.scr', r'\.exe'
     ]
     matches = [m for m in code_exploit_lexicon if re.search(m, text, re.I)]
-    
-    # Check for crypto / wallet address extraction
     crypto_addresses = re.findall(r'\b(0x[a-fA-F0-9]{40}|T[A-Za-z1-9]{33})\b', text)
     telegram_handles = re.findall(r'@([a-zA-Z0-9_]{4,32})', text)
 
@@ -94,7 +90,6 @@ def analyze_stylometry(text: str) -> Dict:
     sentences = max(len(re.split(r'[.!?]+', text)), 1)
     burstiness = round(len(words) / sentences, 2)
     entropy = compute_shannon_entropy(text)
-
     synthetic_prob = min(round((entropy / 8.0) * 45 + (burstiness / 25) * 55, 1), 99.0) if text else 0.0
 
     return {
@@ -106,7 +101,7 @@ def analyze_stylometry(text: str) -> Dict:
 
 def check_domain_reputation(domain: str, authentic_target: str = "meta-careers.com") -> Dict:
     if not domain:
-        return {"levenshtein_distance": 0, "is_suspect": False}
+        return {"distance": 0, "is_suspect": False}
     
     is_punycode = domain.lower().startswith("xn--") or ".xn--" in domain.lower()
     non_ascii = [c for c in domain if ord(c) > 127]
@@ -163,7 +158,6 @@ async def execute_audit(
     stego_data = detect_zero_width_and_invisible_steganography(consolidated_text)
     dev_exploits = detect_devsecops_contagious_interview(consolidated_text)
 
-    # Deepfake Inspector Simulation
     deepfake_rep = None
     if av_artifact_url.strip():
         deepfake_rep = {
@@ -173,7 +167,6 @@ async def execute_audit(
             "verdict": "SYNTHETIC_AV_CLONE_CONFIRMED"
         }
 
-    # Dynamic Weighting
     threat_points = 15
     if auth_matrix["spf"] != "PASS": threat_points += 15
     if auth_matrix["dkim"] != "PASS": threat_points += 15
@@ -184,7 +177,6 @@ async def execute_audit(
     if deepfake_rep: threat_points += 25
     threat_score = min(threat_points, 100)
 
-    # MITRE ATT&CK Matrix Alignment
     mitre_ttps = []
     if dev_exploits["is_dev_test_trap"]:
         mitre_ttps.append({"id": "T1204.002", "name": "User Execution: Malicious Payload Repository"})
@@ -227,7 +219,7 @@ async def serve_ui():
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>SENTINEL // Modern Cyber Threat Workstation</title>
+      <title>SENTINEL // Cyber Threat Workstation</title>
       <script src="https://cdn.tailwindcss.com"></script>
       <style>
         body { background-color: #04070d; color: #94a3b8; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
@@ -267,7 +259,7 @@ async def serve_ui():
         </div>
       </aside>
 
-      <!-- Main Operational Console -->
+      <!-- Main Console -->
       <main class="flex-1 p-8 overflow-y-auto">
         <header class="mb-8">
           <h1 class="text-3xl font-black text-white neon-glow tracking-wider">SENTINEL // PHISHING & SPOOF FORENSICS</h1>
@@ -275,7 +267,6 @@ async def serve_ui():
         </header>
 
         <div class="grid grid-cols-12 gap-8">
-          <!-- Ingestion Column -->
           <section class="col-span-6 space-y-4">
             <h3 class="text-xs tracking-wider bg-[#0f1926] text-[#00ff88] inline-block px-3 py-1 rounded border border-[#1c2c44]">[1.0] ARTIFACT INGESTION</h3>
             
@@ -307,7 +298,6 @@ async def serve_ui():
             </div>
           </section>
 
-          <!-- Telemetry Matrix -->
           <section class="col-span-6 space-y-4">
             <h3 class="text-xs tracking-wider bg-[#0f1926] text-[#00e5ff] inline-block px-3 py-1 rounded border border-[#1c2c44]">[2.0] TELEMETRY MATRIX</h3>
 
@@ -316,7 +306,6 @@ async def serve_ui():
             </div>
 
             <div id="activeTelemetry" class="hidden space-y-4 text-xs">
-              <!-- Score & On-Chain Proof -->
               <div class="border border-[#121c2d] bg-[#070b13] rounded-lg p-4 flex justify-between items-center">
                 <div>
                   <span class="text-[10px] text-gray-500 block">POLYGON ATTESTATION HASH</span>
@@ -329,7 +318,6 @@ async def serve_ui():
                 </div>
               </div>
 
-              <!-- Attack Surface Radar Canvas -->
               <div class="border border-[#121c2d] bg-[#070b13] rounded-lg p-4 flex items-center justify-between">
                 <div>
                   <span class="text-xs font-bold text-white block">ATTACK SURFACE RADAR</span>
@@ -338,14 +326,12 @@ async def serve_ui():
                 <canvas id="threatCanvas" width="130" height="130"></canvas>
               </div>
 
-              <!-- DevSecOps & Steganography Real-time Alarms -->
               <div class="border border-[#121c2d] bg-[#070b13] rounded-lg p-4 space-y-2">
                 <span class="font-bold text-white block">DEVSECOPS & STEGANOGRAPHY ALARMS</span>
                 <div id="devAlerts" class="text-[11px] space-y-1"></div>
                 <div id="stegoAlerts" class="text-[11px] space-y-1"></div>
               </div>
 
-              <!-- Stylometrics & AV Deepfake Telemetry -->
               <div class="grid grid-cols-2 gap-4">
                 <div class="border border-[#121c2d] bg-[#070b13] rounded-lg p-4 space-y-2">
                   <span class="font-bold text-white block">STYLOMETRICS</span>
@@ -359,7 +345,6 @@ async def serve_ui():
                 </div>
               </div>
 
-              <!-- MITRE Matrix Badges -->
               <div class="border border-[#121c2d] bg-[#070b13] rounded-lg p-4">
                 <span class="text-xs font-bold text-white block mb-2">DETECTED MITRE ATT&CK® TACTICS</span>
                 <div id="mitreBadges" class="flex flex-wrap gap-2"></div>
@@ -383,8 +368,7 @@ async def serve_ui():
             document.getElementById('sender').value = "@GlobalRecruitmentHR";
             document.getElementById('avUrl').value = "";
           } else if (val === 'unicode_stego') {
-            // Injects invisible zero-width spaces (\u200B) directly inside the text payload
-            document.getElementById('payload').value = "Confidential\u200B\u200C\u200D Executive Offer Letter. Verify banking routing instructions on our enterprise onboarding server.";
+            document.getElementById('payload').value = "Confidential\\u200B\\u200C\\u200D Executive Offer Letter. Verify banking routing instructions on our enterprise onboarding server.";
             document.getElementById('domain').value = "meta-careers-support.com";
             document.getElementById('sender').value = "hr@meta-careers-support.com";
             document.getElementById('avUrl').value = "";
@@ -417,15 +401,13 @@ async def serve_ui():
             tierBadge.innerText = data.threat_tier;
             tierBadge.className = "inline-block mt-1 text-[9px] px-2 py-0.5 rounded font-bold " + (data.composite_threat_score >= 70 ? "bg-red-950 text-red-400 border border-red-800" : "bg-yellow-950 text-yellow-400 border border-yellow-800");
 
-            // DevSecOps Alerts
             const devBox = document.getElementById('devAlerts');
             if (data.devsecops_exploit.is_dev_test_trap) {
               devBox.innerHTML = `<span class="text-red-400 font-bold">⚠️ Malicious Dev Pipeline: </span><span class="text-gray-300">${data.devsecops_exploit.developer_exploit_indicators.join(', ')}</span>`;
             } else {
-              devBox.innerHTML = `<span class="text-gray-500">No malicious CLI commands or code test exploits detected</span>`;
+              devBox.innerHTML = `<span class="text-gray-500">No malicious CLI commands detected</span>`;
             }
 
-            // Stego Alerts
             const stegoBox = document.getElementById('stegoAlerts');
             if (data.steganography.steganography_detected) {
               stegoBox.innerHTML = `<span class="text-red-400 font-bold">⚠️ Invisible Glyphs Detected: </span><span class="text-yellow-400">Zero-width steganography active in payload</span>`;
@@ -433,11 +415,9 @@ async def serve_ui():
               stegoBox.innerHTML = `<span class="text-gray-500">Zero-width Unicode integrity intact</span>`;
             }
 
-            // Stylometrics
             document.getElementById('entropyVal').innerText = data.stylometrics.entropy;
             document.getElementById('syntheticVal').innerText = data.stylometrics.synthetic_confidence + "%";
 
-            // Deepfake
             const dfBox = document.getElementById('deepfakeDetails');
             if (data.deepfake) {
               dfBox.innerHTML = `
@@ -448,14 +428,12 @@ async def serve_ui():
               dfBox.innerHTML = `<span class="text-gray-500">No AV artifact ingested</span>`;
             }
 
-            // MITRE Badges
             const mBox = document.getElementById('mitreBadges');
             mBox.innerHTML = "";
             data.mitre_ttps.forEach(m => {
               mBox.innerHTML += `<span class="bg-[#03060a] border border-[#1b283d] text-gray-300 px-2 py-1 rounded"><strong class="text-[#00ff88]">${m.id}</strong>: ${m.name}</span>`;
             });
 
-            // Draw Radar Chart
             drawRadar([
               data.domain_forensics.is_suspect ? 90 : 15,
               data.steganography.steganography_detected ? 95 : 10,
@@ -507,4 +485,5 @@ async def serve_ui():
     """
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
