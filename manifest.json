@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Sentinel Phishing Interceptor",
+  "version": "1.0",
+  "description": "Scans recruiter messages on LinkedIn and Gmail for spoofing and synthetics.",
+  "permissions": ["activeTab", "scripting"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.linkedin.com/*", "*://mail.google.com/*"],
+      "js": ["content.js"]
+    }
+  ]
+}
